@@ -1,5 +1,6 @@
 from mdptoolbox.util import check
 import numpy as np
+import itertools
 
 
 def coord(s, size):
@@ -92,14 +93,42 @@ def add_exit(P, R, size):
     return P, R
 
 
-class Grid:
+class Rooms:
     def __init__(self, n):
-        A = 4
-        S = 4 * n * n
-        size = 2*n
-        self.P = np.zeros((A, S, S))
-        self.R = -np.ones((A, S, S))
-        self.P = add_displacements(self.P, size)
-        self.P = add_walls(self.P, size)
-        self.P, self.R = add_exit(self.P, self.R, size)
+        self.A = 4
+        self.S = 4 * n * n
+        self.size = 2*n
+        self.P = np.zeros((self.A, self.S, self.S))
+        self.R = -np.ones((self.A, self.S, self.S))
+        self.P = add_displacements(self.P, self.size)
+        self.P = add_walls(self.P, self.size)
+        self.P, self.R = add_exit(self.P, self.R, self.size)
         check(self.P, self.R)
+        self.regions = [[] for _ in range(4)]
+        self.make_regions()
+
+    def make_regions(self):
+        """
+        Divide the state space into four equal rooms.
+        """
+        for x in range(self.size):
+            for y in range(self.size):
+                if x <= self.size//2-1:
+                    if y <= self.size//2-1:
+                        self.regions[2].append(state(x, y, self.size))
+                    else:
+                        self.regions[0].append(state(x, y, self.size))
+                else:
+                    if y <= self.size//2-1:
+                        self.regions[3].append(state(x, y, self.size))
+                    else:
+                        self.regions[1].append(state(x, y, self.size))
+
+        for elem in self.regions:
+            elem.sort()
+
+        # Check if the regions constitute a partition of the state space
+        assert(sorted(list(itertools.chain.from_iterable(self.regions))) == list(range(self.S)))
+
+env = Rooms(5)
+print(env.regions)
